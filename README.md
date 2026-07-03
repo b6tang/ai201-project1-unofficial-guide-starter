@@ -39,37 +39,25 @@
 
 ## Chunking Strategy
 
-<!-- Describe your chunking approach with enough specificity that someone else could reproduce it.
-     Include:
-     - Chunk size (characters or tokens) and why that size fits your documents
-     - Overlap size and why (or why not) you used overlap
-     - Any preprocessing you did before chunking (e.g., stripping HTML, removing headers)
-     - What your final chunk count was across all documents -->
+**Chunk size:** One complete written review record per chunk. This is not a fixed character limit: each chunk starts at `--- Review N ---` and ends immediately before the next review marker or the end of the source document.
 
-**Chunk size:**
+**Overlap:** 0 characters. Reviews are independent records, so no information needs to carry across a boundary into the next review.
 
-**Overlap:**
+**Why these choices fit your documents:** Each review combines structured fields (course, date, rating, difficulty, grade) with one student's written explanation. Keeping the entire record together preserves that context for retrieval. Splitting a review could separate its rating or grade from its explanation, while combining adjacent reviews would mix unrelated student opinions. Before chunking, `ingest.py` ignores the document header, corpus note, and derived statistics above the first review marker, so those are not indexed as standalone chunks. Each chunk includes the professor name for standalone context and retains source filename, review position, and chunk ID as metadata.
 
-**Why these choices fit your documents:**
-
-**Final chunk count:**
+**Final chunk count:** 141 review chunks from 12 local source documents.
 
 ---
 
 ## Sample Chunks
 
-<!-- Paste 5 representative chunks from your document collection after running your ingestion pipeline.
-     For each chunk, note which source document it came from.
-     These must be actual text — not screenshots. -->
-
 | # | Source document | Chunk text |
 |---|----------------|------------|
-| 1 | | |
-| 2 | | |
-| 3 | | |
-| 4 | | |
-| 5 | | |
-
+| 1 | `anahit_asadyan.txt` | Professor: Anahit Asadyan<br><br>--- Review 1 ---<br>Course: MATH5A<br>Review date: 2025-08-11<br>Rating: 3<br>Difficulty: 4<br>Would take again: Not provided<br>Grade: A<br><br>Review:<br>She is an extremely kind person and she really cares about you.<br>That being said her teaching is just okay, she also does everything on cengage which is an online textbook.<br>Most of the time you will probably be teaching yourself, I took her for summer, so idk how she is in the longer semesters.<br>But if you want to genuinely learn, look elsewhere. |
+| 2 | `gonzaga_mendez.txt` | Professor: Gonzaga Mendez<br><br>--- Review 7 ---<br>Course: MATH005A<br>Review date: 2023-12-07<br>Rating: 4<br>Difficulty: 4<br>Would take again: Not provided<br>Grade: B<br><br>Review:<br>Took him for Math 8 and 5A.<br>Chillest professor at PCC but kind of lazy.<br>Takes forever to grade & post practice exams.<br>Material is hard but his lectures are great and he knows how to teach.<br>Pay attention during lectures & take notes!<br>If u don't understand the material, go to office hours or u won't pass.<br>Overall, try, listen, and you'll be alright. |
+| 3 | `john_mathewson.txt` | Professor: John Mathewson<br><br>--- Review 1 ---<br>Course: MATH5A<br>Review date: 2026-06-30<br>Rating: 2<br>Difficulty: 4<br>Would take again: Not provided<br>Grade: B<br><br>Review:<br>He usually will give problems on the lecture and solve it by himself immediately, so you barely even have time to comprehend the questions.<br>He is nice and all, but you really have to know and prepare for the material to keep up with his pace. |
+| 4 | `nerses_abramyan.txt` | Professor: Nerses Abramyan<br><br>--- Review 15 ---<br>Course: MATH5A<br>Review date: 2021-03-29<br>Rating: 5<br>Difficulty: 3<br>Would take again: Not provided<br>Grade: A+<br><br>Review:<br>His lectures are solid.<br>Do his homework assignments as if they were study guides for the exams!!<br>He is so sweet and caring do not be afraid to ask questions he will explain until you understand.<br>His grading is really fair.<br>Make sure to participate for points (even if it's just asking a Q).<br>Remember it's CALCULUS it's not supposed to be easy. |
+| 5 | `thomas_kowalski.txt` | Professor: Thomas Kowalski<br><br>--- Review 7 ---<br>Course: MATH5A<br>Review date: 2016-04-12<br>Rating: 1<br>Difficulty: 5<br>Would take again: Not provided<br>Grade: Drop/Withdrawal<br><br>Review:<br>For starters his class was "flipped" meaning all the learning was done at home.<br>he sent videos but the videos are boring and unclear.<br>in class he did not lecture did not show any examples and hardly asked if any of us needed help.<br>his grading is confusing.<br>he'll take of points for ridiculous reasons. |
 ---
 
 ## Embedding Model
