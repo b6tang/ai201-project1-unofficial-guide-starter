@@ -1,39 +1,35 @@
 # The Unofficial Guide — Project 1
-
-> **How to use this template:**
-> Complete each section *after* you've built and tested the corresponding part of your system.
-> Do not write placeholder text — if a section isn't done yet, leave it blank and come back.
-> Every section below is required for submission. One-liners will not receive full credit.
-
 ---
 
 ## Domain
 
-<!-- What topic or category of knowledge does your system cover?
-     Why is this knowledge valuable, and why is it hard to find through official channels?
-     Example: "Student reviews of CS professors at [university] — useful because official
-     course descriptions don't reflect teaching style, exam difficulty, or workload." -->
+This project is an unofficial course-selection guide for Pasadena City College students choosing among regular MATH 005A (Single Variable Calculus I) instructors. 
+
+It is based on student reviews with written comments and helps students understand how different instructors are described in terms of teaching style, workload, exams, grading, and course format. PCC's official course information does not consolidate these instructor-specific student experiences, while individual reviews are scattered across separate professor pages.
 
 ---
 
 ## Document Sources
+All corpus documents are written student reviews from Rate My Professors, organized by instructor.
 
-<!-- List every source you collected documents from.
-     Be specific: include URLs, subreddit names, forum thread titles, or file names.
-     Aim for variety — sources that together cover different subtopics or perspectives. -->
+I used a two-stage curation process to build a relevant and usable corpus. I began with 36 potential Pasadena City College mathematics instructors listed in the official PCC Fall 2026 schedule. I then narrowed the list to 22 instructors scheduled to teach regular MATH 005A (Single Variable Calculus I) sections. Instructors associated only with honors sections or other math courses were not included.
 
-| # | Source | Type | URL or file path |
-|---|--------|------|-----------------|
-| 1 | | | |
-| 2 | | | |
-| 3 | | | |
-| 4 | | | |
-| 5 | | | |
-| 6 | | | |
-| 7 | | | |
-| 8 | | | |
-| 9 | | | |
-| 10 | | | |
+From those 22 current MATH 005A candidates, I selected the 12 instructors with enough written MATH 005A review data to support retrieval and cross-instructor comparison. I retained only reviews with written comments for MATH 005A, then standardized them into consistent local text documents. Each review record preserves its course label, review date, rating, difficulty, grade information when available, and written comment.
+
+| # | Instructor reviewed |  Local file path | Original source URL  |
+|---|------------------------------------|-----------------------|-----------------|
+| 1 | Gonzaga Mendez — 9 written MATH 005A student reviews | `documents/gonzaga_mendez.txt` | https://www.ratemyprofessors.com/professor/2609879 |
+| 2 | John Mathewson — 17 written MATH 005A student reviews | `documents/john_mathewson.txt` | https://www.ratemyprofessors.com/professor/1179033 |
+| 3 | Roger Yang — 3 written MATH 005A student reviews | `documents/roger_yang.txt` | https://www.ratemyprofessors.com/professor/195939 |
+| 4 | Erlend Weydahl — 4 written MATH 005A student reviews | `documents/erlend_weydahl.txt` | https://www.ratemyprofessors.com/professor/284762 |
+| 5 | Frank Bermudez — 15 written MATH 005A student reviews | `documents/frank_bermudez.txt` | https://www.ratemyprofessors.com/professor/1700371 |
+| 6 | Jay Cho — 5 written MATH 005A student reviews | `documents/jay_cho.txt` | https://www.ratemyprofessors.com/professor/205605 |
+| 7 | Thomas Kowalski — 7 written MATH 005A student reviews | `documents/thomas_kowalski.txt` | https://www.ratemyprofessors.com/professor/2119025 |
+| 8 | Nerses Abramyan — 18 written MATH 005A student reviews | `documents/nerses_abramyan.txt` | https://www.ratemyprofessors.com/professor/226835 |
+| 9 | Irina Badalyan — 27 written MATH 005A student reviews | `documents/irina_badalyan.txt` | https://www.ratemyprofessors.com/professor/347864 |
+| 10 | Mark Pavitch — 4 written MATH 005A student reviews | `documents/mark_pavitch.txt` | https://www.ratemyprofessors.com/professor/1661072 |
+| 11 | Sandra Vazquez-Celaya — 22 written MATH 005A student reviews | `documents/sandra_vazquez_celaya.txt` | https://www.ratemyprofessors.com/professor/2255988 |
+| 12 | Anahit Asadyan — 10 written MATH 005A student reviews | `documents/anahit_asadyan.txt` | https://www.ratemyprofessors.com/professor/2167794 |
 
 ---
 
