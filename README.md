@@ -58,141 +58,147 @@ From those 22 current MATH 005A candidates, I selected the 12 instructors with e
 
 ## Embedding Model
 
-<!-- Name the embedding model you used and explain your choice.
-     Then answer: if you were deploying this system for real users and cost wasn't a constraint,
-     what tradeoffs would you weigh in choosing a different model?
-     Consider: context length limits, multilingual support, accuracy on domain-specific text,
-     latency, and local vs. API-hosted. -->
+**Model used:**  
+I used `all-MiniLM-L6-v2` through ChromaDB's SentenceTransformer embedding function. I chose it because my corpus is small, the review chunks are short, and it runs locally without another API key.
 
-**Model used:**
-
-**Production tradeoff reflection:**
-
+**Production tradeoff reflection:**  
+Even if cost were not an issue, I would not automatically switch models. I would first test whether a stronger model actually finds instructor-specific details better, such as class format or exam policies. A larger or API-hosted model could be slower and would add another dependency.
 ---
 
 ## Retrieval Test Results
 
-<!-- Run these 3 queries through your retrieval system and record the top returned chunks.
-     For at least 2 of the 3, explain why the returned chunks are relevant to the query.
-     Results must be text — not screenshots. -->
-
-**Query 1:**
+**Query 1:**  
+Are Asadyan's quizzes and tests like the homework?
 
 Top returned chunks:
--
--
--
+- **Rank 1 — `anahit_asadyan.txt`, Review 8 (2019):** “Quiz score will be added to the test.”
+- **Rank 2 — `anahit_asadyan.txt`, Review 5 (2024):** Described clear lectures and opportunities to ask questions.
+- **Rank 3 — `anahit_asadyan.txt`, Review 9 (2019):** “Her tests are taken primarily from the homework.”
 
-Relevance explanation:
+Relevance explanation:  
+This was a mixed result. Review 9 directly answers the question, and Review 8 is related to quizzes and tests. Review 5 is about lecture style, so it is a weaker match.
 
 ---
 
-**Query 2:**
+**Query 2:**  
+How many tests does Gonzaga Mendez give?
 
 Top returned chunks:
--
--
--
+- **Rank 1 — `gonzaga_mendez.txt`, Review 2 (2024):** Said he allows two exam retakes.
+- **Rank 2 — `gonzaga_mendez.txt`, Review 8 (2022):** “4 exams in total, 3 tests and 1 final.”
+- **Rank 3 — `gonzaga_mendez.txt`, Review 1 (2026):** “His entire grade book is based off 3 tests + the final.”
 
-Relevance explanation:
+Relevance explanation:  
+Reviews 8 and 1 directly answer the question with the same test structure: three tests and one final. Review 2 is less direct, but it is still about exams in the same class.
 
 ---
 
-**Query 3:**
+**Query 3:**  
+Was Jay Cho's MATH 005A class ever hybrid or online?
 
 Top returned chunks:
--
--
--
+- **Rank 1 — `jay_cho.txt`, Review 1 (2024):** “I took his hybrid course.”
+- **Rank 2 — `jay_cho.txt`, Review 3 (2022):** “Class was hybrid, so the online lectures were pretty boring.”
+- **Rank 3 — `jay_cho.txt`, Review 5 (2009):** Described the class as easy and said his lectures were clear.
 
-Relevance explanation:
+Relevance explanation:  
+The first two chunks directly answer the question because both describe the class as hybrid, and Review 3 also mentions online lectures. The third chunk is a weaker result because it does not discuss course format.
 
 ---
 
 ## Grounded Generation
 
-<!-- Explain how your system enforces grounding — how does it prevent the LLM from answering
-     beyond the retrieved documents?
-     Describe both your system prompt (what instruction you gave the model) and any structural
-     choices (e.g., how you formatted the context, whether you filtered low-relevance chunks).
-     Do not just say "I told it to use the documents" — show the actual instruction or explain
-     the mechanism. -->
+**System prompt grounding instruction:**  
+My system prompt tells the model to “Answer only from the retrieved student reviews” and to “Make only claims directly supported by the excerpts.” It also tells the model to describe claims as past reviewer reports, not current course policy. If the reviews do not support the question, it must return: `I don't have enough information in the collected reviews to answer that.` The model only receives the chunks returned by retrieval, and for questions that name one instructor, I remove chunks from other instructors before sending the context to the model.
 
-**System prompt grounding instruction:**
-
-**How source attribution is surfaced in the response:**
-
+**How source attribution is surfaced in the response:**  
+Each retrieved review is labeled with its source filename and review number. After the model answers, Python adds the `Sources:` section using the same chunks that were passed into generation. The LLM does not create its own citations.
 ---
 
 ## Example Responses
 
-<!-- Provide at least 2 grounded responses (query + response + source attribution)
-     and 1 out-of-scope query showing your system's refusal.
-     All entries must be text — not screenshots. -->
-
 **Grounded response 1**
 
-Query:
+Query:  
+How many tests does Gonzaga Mendez give?
 
-Response:
+Response:  
+A past reviewer reported that Gonzaga Mendez gives 3 tests and 1 final. Another reviewer also reported that the entire gradebook is based off 3 tests + the final.
+
+A past reviewer from 2022 reported that there are 4 exams in total, which includes 3 tests and 1 final.
 
 Source attribution:
+- gonzaga_mendez.txt — Review 2
+- gonzaga_mendez.txt — Review 8
+- gonzaga_mendez.txt — Review 1
+- gonzaga_mendez.txt — Review 3
+- gonzaga_mendez.txt — Review 5
+- gonzaga_mendez.txt — Review 6
+- gonzaga_mendez.txt — Review 7
 
 ---
 
 **Grounded response 2**
 
-Query:
+Query:  
+Was Jay Cho's MATH 005A class ever hybrid or online?
 
-Response:
+Response:  
+A past reviewer reported that Jay Cho's MATH 005A class was hybrid in 2022 and 2024, with online lectures and in-person group work. Another past reviewer reported that in 2023, the class was mostly online with asynchronous lectures and in-person review sessions.
+
+A past reviewer from 2009 did not mention the class being hybrid or online, but this review does not provide information about the class format.
 
 Source attribution:
+- jay_cho.txt — Review 1
+- jay_cho.txt — Review 3
+- jay_cho.txt — Review 5
+- jay_cho.txt — Review 2
 
 ---
 
 **Out-of-scope query**
 
-Query:
+Query:  
+Are any MATH 005A tests open book?
 
-System response (refusal):
-
----
-
-## Query Interface
-
-<!-- Describe your query interface: what are the input fields, what does the output look like?
-     Then provide a complete sample interaction transcript showing a real exchange. -->
-
-**Input fields:**
-
-**Output format:**
+System response (refusal):  
+I don't have enough information in the collected reviews to answer that.
 
 ---
+
+**Input fields:**  
+The app has one text box labeled `Ask about a MATH 005A instructor`. I can enter a question and either click the `Ask` button or press Enter.
+
+**Output format:**  
+The app shows a short answer in a text box below the question. For supported questions, it adds a `Sources:` section with the review filename and review number. For unsupported questions, it returns the fallback message instead of guessing.
 
 **Sample Interaction Transcript**
 
-<!-- Show a complete query → response exchange as it actually appears in your interface.
-     Must be text — not a screenshot. -->
-
-> **User:** 
-
-> **System:** 
+> **User:** How many tests does Gonzaga Mendez give?
+>
+> **System:** A past reviewer reported that Gonzaga Mendez gives 3 tests and 1 final. Another reviewer also reported that the entire gradebook is based off 3 tests + the final.
+>
+> A past reviewer from 2022 reported that there are 4 exams in total, which includes 3 tests and 1 final.
+>
+> Sources:
+> - gonzaga_mendez.txt — Review 2
+> - gonzaga_mendez.txt — Review 8
+> - gonzaga_mendez.txt — Review 1
+> - gonzaga_mendez.txt — Review 3
+> - gonzaga_mendez.txt — Review 5
+> - gonzaga_mendez.txt — Review 6
+> - gonzaga_mendez.txt — Review 7
 
 ---
 
 ## Evaluation Report
-
-<!-- Run your 5 test questions from planning.md through your system and record the results.
-     Be honest — a partially accurate or inaccurate result that you explain well is more
-     valuable than a suspiciously perfect result. -->
-
-| # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
-|---|----------|-----------------|------------------------------|-------------------|-------------------|
-| 1 | | | | | |
-| 2 | | | | | |
-| 3 | | | | | |
-| 4 | | | | | |
-| 5 | | | | | |
+| # | Question | Expected answer | System response (summarized) | Retrieved chunks | Retrieval quality | Response accuracy |
+|---|----------|-----------------|------------------------------|------------------|-------------------|-------------------|
+| 1 | Are Asadyan's quizzes and tests like the homework? | Multiple reviews report that quizzes were based on homework and tests or exams were similar to, or primarily taken from, homework. | The system correctly reported that tests were primarily from homework and that quizzes and exams were based on homework. It then added that quizzes and tests may require more than homework, which was an inference from general study advice rather than a direct review claim. | `anahit_asadyan.txt` — Reviews 8, 5, 9, 2, 3, 7, 6 | Relevant | Partially accurate |
+| 2 | Does Asadyan give extra credit? | Reports conflict: 2019 reviews described extra-credit opportunities, while a 2025 review reported no extra credit. Do not present either as current policy. | The system reported 2019 reviews describing extra credit and quiz-score extra credit, then contrasted them with a 2025 review stating that Asadyan did not provide extra credit. | `anahit_asadyan.txt` — Reviews 7, 5, 6, 9, 8, 10, 4 | Relevant | Accurate |
+| 3 | How many tests does Gonzaga Mendez give? | Past reviews describe 3 tests plus 1 final, for 4 major exams total. | The system reported 3 tests and 1 final, and stated that a 2022 review described 4 exams total: 3 tests and 1 final. | `gonzaga_mendez.txt` — Reviews 2, 8, 1, 3, 5, 6, 7 | Relevant | Accurate |
+| 4 | Was Jay Cho's MATH 005A class ever hybrid or online? | Yes. Past reviews described hybrid classes, and one review described mostly online asynchronous lectures. | The system reported hybrid classes in 2022 and 2024 and mostly online asynchronous lectures in 2023. It also noted that a 2009 review did not provide class-format information. | Raw retrieval: `jay_cho.txt` — Reviews 1, 3, 5, 2; `sandra_vazquez_celaya.txt` — Reviews 6, 15, 16. The instructor filter kept only the Jay Cho reviews for generation. | Partially relevant | Partially accurate |
+| 5 | Are any MATH 005A tests open book? | The collected reviews do not provide enough information; the system should decline rather than guess. | `I don't have enough information in the collected reviews to answer that.` | `sandra_vazquez_celaya.txt` — Reviews 6, 1; `irina_badalyan.txt` — Review 16; `nerses_abramyan.txt` — Reviews 17, 7; `frank_bermudez.txt` — Review 8; `john_mathewson.txt` — Review 13 | Partially relevant | Accurate |
 
 **Retrieval quality:** Relevant / Partially relevant / Off-target  
 **Response accuracy:** Accurate / Partially accurate / Inaccurate
@@ -201,57 +207,37 @@ System response (refusal):
 
 ## Failure Case Analysis
 
-<!-- Identify at least one question where retrieval or generation did not work as expected.
-     Write a specific explanation of *why* it failed, tied to a part of the pipeline.
+**Question that failed:**  
+Are Asadyan's quizzes and tests like the homework?
 
-     "The answer was wrong" is not an explanation.
+**What the system returned:**  
+The system correctly said that past reviews described tests as coming from homework and quizzes and exams as based on homework. However, it also said that quizzes and tests may require more than just homework.
 
-     "The relevant information was split across a chunk boundary, so retrieval returned
-     only half the context — the model didn't have enough to answer correctly" is an explanation.
+**Root cause (tied to a specific pipeline stage):**  
+This was a generation-stage problem. Retrieval returned some directly relevant reviews, but it also included more general study advice. The model connected that advice to the question and made an inference instead of only using the reviews that directly discussed quizzes, tests, and homework.
 
-     "The embedding model treated the professor's nickname as out-of-vocabulary and returned
-     results from an unrelated review" is an explanation. -->
-
-**Question that failed:**
-
-**What the system returned:**
-
-**Root cause (tied to a specific pipeline stage):**
-
-**What you would change to fix it:**
-
+**What you would change to fix it:**  
+I would add a step before generation that keeps only chunks that directly answer the question. I would also add a check for inference wording such as “implying” before showing the answer.
 ---
 
 ## Spec Reflection
+**One way the spec helped you during implementation:**  
+The spec helped me break the project into smaller steps: chunking, retrieval, and generation. The evaluation questions also gave me specific things to test instead of just asking random questions.
 
-<!-- Reflect on how planning.md shaped your implementation.
-     Answer both questions with at least 2–3 sentences each. -->
-
-**One way the spec helped you during implementation:**
-
-**One way your implementation diverged from the spec, and why:**
-
+**One way your implementation diverged from the spec, and why:**  
+I originally planned to retrieve 5 chunks, but changed it to 7. When I tested the extra-credit question, the conflicting 2025 review only appeared at rank 7, so keeping 5 results would have missed it.
 ---
 
 ## AI Usage
 
-<!-- Describe at least 2 specific instances where you used an AI tool during this project.
-     For each: what did you give the AI as input, what did it produce, and what did you
-     change, override, or direct differently?
-
-     "I used Claude to help me code" is not sufficient.
-     "I gave Claude my Chunking Strategy section from planning.md and asked it to implement
-     chunk_text(). It returned a function using a fixed character split. I overrode the
-     chunk size from 500 to 200 because my documents are short reviews, not long guides." -->
-
 **Instance 1**
 
-- *What I gave the AI:*
-- *What it produced:*
-- *What I changed or overrode:*
+- *What I gave the AI:* I showed Claude my review-file format, my code skeleton with docstring, and the chunking plan from `planning.md`.
+- *What it produced:* It helped me debug and finish the `load_documents()` and `chunk_document()` functions.
+- *What I changed or overrode:* I checked the code against my actual files and kept one full review as one chunk. I did not use fixed-size chunks because the reviews were already short. I also checked the maximum character length across all reviews and confirmed that none were long enough to need splitting.
 
 **Instance 2**
 
-- *What I gave the AI:*
-- *What it produced:*
-- *What I changed or overrode:*
+- *What I gave the AI:* I showed Claude the retrieval output format and explained that answers needed to come only from retrieved reviews and include sources.
+- *What it produced:* It helped draft the Groq generation code and the basic Gradio interface.
+- *What I changed or overrode:* I made Python append the Sources section instead of trusting the LLM to cite correctly. I also changed `top_k` from 5 to 7 after testing showed that the conflicting extra-credit review was ranked seventh.

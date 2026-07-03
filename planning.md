@@ -47,13 +47,13 @@ For the required RAG pipeline, only complete individual review records will be e
 
 **Overlap:** 0 characters for normal review chunks. If an unusually long review must be split, use 150 characters of overlap between its parts.
 
-**Reasoning:** After reviewing the collected documents, the student reviews are short and self-contained, and no review record is long enough to require additional splitting. Each review is therefore kept as one chunk so that its course label, date, rating fields, and written opinion remain together. This prevents feedback from different instructors or reviews from being mixed in the same chunk. Each chunk will retain professor and source metadata for citation.
+**Reasoning:** After reviewing the collected documents, the student reviews are short and self-contained, and no review record is long enough to require additional splitting. Each review is therefore kept as one chunk so that its course label, date, rating fields, and written opinion remain together. This prevents feedback from different instructors or reviews from being mixed in the same chunk. Each chunk retains its source filename and review position as ChromaDB metadata for citation. Professor context remains in the review text and source filename.
 
 ## Retrieval Approach
 
 **Embedding model:** I will use `all-MiniLM-L6-v2` through `sentence-transformers` to embed the review chunks and user queries. This is a lightweight local embedding model and appropriate for an initial semantic-search system with a small corpus of short review records.
 
-**Top-k:** 5 chunks per query. Because the corpus contains short, opinion-based reviews, the fifth-ranked result may still contain useful evidence that would be missed with a smaller retrieval set. Retrieving too few chunks could omit the review that contains the needed evidence; retrieving too many could introduce weakly related opinions and pull the generated answer away from the user's question. I will start with five and adjust it only after reviewing real retrieval results from the evaluation queries.
+**Top-k:** 7 chunks per query. I initially tested `top_k = 5`, but the extra-credit evaluation question retrieved older positive extra-credit reports while the conflicting 2025 review stating that extra credit was not provided appeared at rank 7. I therefore changed the final setting to 7 so the system can present both documented sides of that conflict. With this small corpus of short reviews, retrieving seven chunks can add weaker matches, so the generation prompt is instructed to ignore excerpts that do not directly answer the question.
 
 **Production tradeoff reflection:** Even if cost were not a constraint, I would compare retrieval quality against latency, multilingual support, model input length, domain-specific accuracy, and whether embeddings should run locally or through an API.  Since the review chunks are short, I do not need a model with a very large context window. A larger model could be slower, so I would only use one if it gave noticeably better retrieval results in my evaluation tests.
 
@@ -73,10 +73,10 @@ For the required RAG pipeline, only complete individual review records will be e
 ## Anticipated Challenges
 
 1. **Conflicting and time-dependent reviewer reports.** 
-   Reviews in the corpus come from different terms and describe individual student experiences. A practice reported in an older review may conflict with a later review, such as reports about extra credit. The system could incorrectly present one reviewer's experience as a current course policy. To reduce this risk, each review chunk will retain its review date and professor metadata, and the generation prompt will require answers to describe these as past reviewer reports. When retrieved reviews conflict, the response should state that the reports differ instead of choosing one as definitive.
+   Reviews in the corpus come from different terms and describe individual student experiences. A practice reported in an older review may conflict with a later review, such as reports about extra credit. The system could incorrectly present one reviewer's experience as a current course policy. To reduce this risk, each review chunk retains its source filename and review position as ChromaDB metadata, while professor name and review date remain in the chunk text, and the generation prompt will require answers to describe these as past reviewer reports. When retrieved reviews conflict, the response should state that the reports differ instead of choosing one as definitive.
 
 2. **Ambiguous retrieval for broad terms.** 
-   Terms such as "online," "grading," or "tests" can refer to different things across the corpus. For example, "online" may refer to online homework, an online textbook, Zoom support, or a hybrid course. Semantic retrieval could return a chunk that shares words with the question but does not directly answer it, or it could mix feedback from different instructors. To reduce this risk, the system will preserve source and professor metadata, show source attribution in every answer, and instruct the LLM to answer only when the retrieved chunks directly support the claim. Otherwise, it must say that the collected reviews do not provide enough information.
+   Terms such as "online," "grading," or "tests" can refer to different things across the corpus. For example, "online" may refer to online homework, an online textbook, Zoom support, or a hybrid course. Semantic retrieval could return a chunk that shares words with the question but does not directly answer it, or it could mix feedback from different instructors. To reduce this risk, the system will preserve source filename and review-position metadata for attribution, while professor identity remains in the review text and source filename, show source attribution in every answer, and instruct the LLM to answer only when the retrieved chunks directly support the claim. Otherwise, it must say that the collected reviews do not provide enough information.
 
 ---
 
@@ -86,33 +86,36 @@ For the required RAG pipeline, only complete individual review records will be e
 documents/*.txt
       │
       ▼
-[Document Ingestion]
-Python
-      │
-      ▼
-[Chunking]
-Python
+[Ingestion + Chunking]
+ingest.py
 1 complete review = 1 chunk
-0 overlap
       │
       ▼
 [Embedding + Vector Store]
-sentence-transformers
-all-MiniLM-L6-v2 
-ChromaDB
+retriever.py
+ChromaDB + all-MiniLM-L6-v2
       │
       ▼
 [Retrieval]
-Python + ChromaDB
-top-5 similarity search
+retrieve(query, top_k=7)
+returns:
+chunk_id, text, source, position, distance
       │
       ▼
 [Generation]
-Python + Groq SDK
-llama-3.3-70b-versatile
+generator.py
+Groq SDK + llama-3.3-70b-versatile
+answer only from retrieved review text
       │
       ▼
-Response + source citations or “not enough information”
+[Programmatic Sources]
+build source list from retrieved results:
+source filename + review position
+      │
+      ▼
+[Interface]
+app.py + Gradio
+query → retrieve → generate → answer + sources
 ```
 ---
 
@@ -132,9 +135,9 @@ Response + source citations or “not enough information”
 
 - **AI tool:** I will use ChatGPT to clarify embedding, ChromaDB, and distance score behavior and to review retrieval output. I will use Claude to generate the embedding and retrieval code.
 
-- **Input provided to AI:** I will give Claude my `Retrieval Approach` section, my Architecture diagram, and the chunk output from Milestone 3. I will specify `all-MiniLM-L6-v2`, ChromaDB, source metadata, and `top_k = 5`.
+- **Input provided to AI:** I will give Claude my `Retrieval Approach` section, my Architecture diagram, and the chunk output from Milestone 3. I will specify `all-MiniLM-L6-v2`, ChromaDB, source metadata, and `top_k = 7`.
 
-- **Expected output:** I expect code that loads chunks from the ingestion pipeline, embeds them with `all-MiniLM-L6-v2`, stores them in ChromaDB with source document name and chunk-position metadata, and provides a retrieval function that returns the top five relevant chunks with source information and distance scores.
+- **Expected output:** I expect code that loads chunks from the ingestion pipeline, embeds them with `all-MiniLM-L6-v2`, stores them in ChromaDB with source document name and chunk-position metadata, and provides a retrieval function that returns the top 7 relevant chunks with source information and distance scores.
 
 - **Verification:** I will read the generated code and ask for an explanation of any ChromaDB code I do not understand. I will run retrieval on three questions from my Evaluation Plan, print the returned chunks and distance scores, and check whether the chunks visibly and directly relate to each question before moving to generation.
 
