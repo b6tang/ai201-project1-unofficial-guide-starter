@@ -87,12 +87,13 @@ documents/*.txt
       │
       ▼
 [Document Ingestion]
-Python + pathlib
+Python
       │
       ▼
 [Chunking]
-Python + re
-1 review = 1 chunk
+Python
+1 complete review = 1 chunk
+0 overlap
       │
       ▼
 [Embedding + Vector Store]
