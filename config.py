@@ -16,7 +16,7 @@ CHROMA_COLLECTION = "pcc_math_005a_reviews"
 CHROMA_PATH = "./chroma_db"
 
 # --- Retrieval ---
-N_RESULTS = 5
+N_RESULTS = 7
 
 # --- Documents ---
 DOCS_PATH = "./documents"

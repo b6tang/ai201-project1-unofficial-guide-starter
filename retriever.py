@@ -7,6 +7,9 @@ and will provide semantic retrieval for user questions.
 import chromadb
 from chromadb.utils import embedding_functions
 from config import CHROMA_COLLECTION, CHROMA_PATH, EMBEDDING_MODEL, N_RESULTS
+import re
+
+
 
 # ChromaDB uses this embedding function automatically when documents are
 # added or queried. The model downloads on first use, then reuses its local
@@ -23,6 +26,7 @@ _collection = _client.get_or_create_collection(
     embedding_function=_ef,
     metadata={"hnsw:space": "cosine"},
 )
+
 
 
 def get_collection():

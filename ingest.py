@@ -1,7 +1,7 @@
 """
 ingest.py — The Unofficial Guide
 
-Reads local professor-review documents.
+Reads local Instructor-rating documents.
 Each complete "--- Review N ---" record becomes one chunk.
 """
 
@@ -45,7 +45,7 @@ def load_documents():
 
 def chunk_document(text, source):
     """
-    Turn one professor document into one chunk per complete review record.
+    Turn one document into one chunk per complete review record.
 
     Document headers and derived statistics before the first review marker
     are intentionally not included in any chunk.
@@ -85,7 +85,7 @@ def chunk_document(text, source):
 
         if review_text:
             chunks.append({
-                "text": f"Professor: {instructor}\n{review_text}",
+                "text": f"Instructor: {instructor}\n{review_text}",
                 "source": source,
                 "position": review_number,
                 "chunk_id": f"{source_stem}_review_{review_number}",
