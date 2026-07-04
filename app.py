@@ -108,6 +108,8 @@ with gr.Blocks() as demo:
 
     btn = gr.Button("Ask")
     answer = gr.Textbox(label="Answer", lines=12)
+    btn.click(handle_query, inputs=inp, outputs=answer)
+    inp.submit(handle_query, inputs=inp, outputs=answer)
 
 
 if __name__ == "__main__":
