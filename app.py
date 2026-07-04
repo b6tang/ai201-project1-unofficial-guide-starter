@@ -4,6 +4,27 @@ from ingest import load_documents, chunk_document
 from retriever import embed_and_store, retrieve, get_collection
 from generator import generate_response
 
+INSTRUCTORS = [
+    "Gonzaga Mendez",
+    "John Mathewson",
+    "Roger Yang",
+    "Erlend Weydahl",
+    "Frank Bermudez",
+    "Jay Cho",
+    "Thomas Kowalski",
+    "Nerses Abramyan",
+    "Irina Badalyan",
+    "Mark Pavitch",
+    "Sandra Vazquez-Celaya",
+    "Anahit Asadyan",
+]
+def _append_instructor(current_text, name):
+    current_text = current_text or ""
+
+    if current_text and not current_text.endswith((" ", "\n")):
+        current_text += " "
+
+    return f"{current_text}{name} "
 
 def run_ingestion():
     """
@@ -61,14 +82,32 @@ with gr.Blocks() as demo:
     gr.Markdown(
         "An unofficial guide to selected Pasadena City College MATH 005A "
         "instructors, based on past student reviews with written comments."
-    )
+    )    
 
-    inp = gr.Textbox(label="Ask about a MATH 005A instructor")
+    gr.Markdown("**Choose an instructor:**")
+    instructor_buttons = []
+
+    for start in range(0, len(INSTRUCTORS), 4):
+        with gr.Row():
+            for name in INSTRUCTORS[start:start + 4]:
+                button = gr.Button(name, size="sm")
+                instructor_buttons.append((button, name))
+
+    inp = gr.Textbox(
+    label="Ask about a MATH 005A instructor",
+    placeholder="Click an instructor above, then type your question.",
+    interactive=True,
+)
+
+    for button, name in instructor_buttons:
+        button.click(
+            fn=lambda current_text, name=name: _append_instructor(current_text, name),
+            inputs=inp,
+            outputs=inp,
+        )
+
     btn = gr.Button("Ask")
     answer = gr.Textbox(label="Answer", lines=12)
-
-    btn.click(handle_query, inputs=inp, outputs=answer)
-    inp.submit(handle_query, inputs=inp, outputs=answer)
 
 
 if __name__ == "__main__":

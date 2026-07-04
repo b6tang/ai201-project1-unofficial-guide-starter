@@ -199,13 +199,13 @@ The app shows a short answer in a text box below the question. For supported que
 
 ## Evaluation Report
 
-| # | System response (summarized)                                                                                                                                                              | Retrieval quality  | Response accuracy |
-| - | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ----------------- |
-| 1 | Reported that tests were primarily from homework, quizzes and exams were based on homework, and homework was similar to tests and quizzes. It also included study advice from a reviewer. | Relevant           | Accurate          |
-| 2 | Reported conflicting past reviews: 2019 reviewers described extra-credit opportunities, while a 2025 reviewer reported no extra credit.                                                   | Relevant           | Accurate          |
-| 3 | Reported 3 tests plus 1 final; a 2022 review described 4 exams total.                                                                                                                     | Relevant           | Accurate          |
-| 4 | Reported hybrid classes in 2022 and 2024, plus mostly online asynchronous lectures in 2023. It also added an irrelevant note that the 2009 review gave no course-format information.      | Partially relevant | Accurate          |
-| 5 | I don't have enough information in the collected reviews to answer that.                                                                                                                  | Off-target         | Accurate          |
+| # | Question | Expected answer | System response (summarized) | Retrieval quality | Response accuracy |
+|---|----------|-----------------|------------------------------|-------------------|-------------------|
+| 1 | Are Asadyan's quizzes and tests like the homework? | Multiple collected reviews said that quizzes were based on homework and that tests or exams were similar to, or primarily taken from, homework. | Reported that tests were primarily from homework, quizzes and exams were based on homework, and homework was similar to tests and quizzes. It also included reviewer study advice. | Relevant | Accurate |
+| 2 | Does Asadyan give extra credit? | Reviews conflict across terms. Some 2019 reviews described extra-credit opportunities, while a 2025 review reported no extra credit. The system should not present either as a current policy. | Reported both the 2019 extra-credit descriptions and the conflicting 2025 report that extra credit was not provided. | Relevant | Accurate |
+| 3 | How many tests does Gonzaga Mendez give? | Past reviews described three tests plus a final, for four major exams total. A separate review mentioned that students could retake two exams, but that detail is not required to answer the test-count question. | Reported three tests and one final, with another reviewer describing the grade book as based on those four major exams. | Relevant | Accurate |
+| 4 | Was Jay Cho's MATH 005A class ever hybrid or online? | Yes. Past reviews described Jay Cho's MATH 005A class as hybrid, and one review said that lectures were mostly online and asynchronous. | Reported hybrid classes in 2022 and 2024 and mostly online asynchronous lectures in 2023. It also added an unnecessary note about a 2009 review not discussing course format. | Partially relevant | Accurate |
+| 5 | What is the weather forecast in Pasadena tomorrow? | The system should return: "I don't have enough information in the collected reviews to answer that." It should not guess, use outside sources, or append a Sources block. | Returned the exact fallback message without sources. | Off-target | Accurate |
 
 
 **Retrieval quality:** Relevant / Partially relevant / Off-target  
