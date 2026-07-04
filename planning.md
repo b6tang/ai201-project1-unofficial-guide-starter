@@ -45,7 +45,7 @@ For the required RAG pipeline, only complete individual review records will be e
 
 **Chunk size:** One complete review record per chunk. Chunk length is variable because each review is kept intact rather than split by a fixed character limit.
 
-**Overlap:** 0 characters for normal review chunks. If an unusually long review must be split, use 150 characters of overlap between its parts.
+**Overlap:** 0 characters. No current review record requires splitting, and the implementation preserves each complete review as one chunk.
 
 **Reasoning:** After reviewing the collected documents, the student reviews are short and self-contained, and no review record is long enough to require additional splitting. Each review is therefore kept as one chunk so that its course label, date, rating fields, and written opinion remain together. This prevents feedback from different instructors or reviews from being mixed in the same chunk. Each chunk retains its source filename and review position as ChromaDB metadata for citation. Professor context remains in the review text and source filename.
 
@@ -53,9 +53,9 @@ For the required RAG pipeline, only complete individual review records will be e
 
 **Embedding model:** I will use `all-MiniLM-L6-v2` through `sentence-transformers` to embed the review chunks and user queries. This is a lightweight local embedding model and appropriate for an initial semantic-search system with a small corpus of short review records.
 
-**Top-k:** 7 chunks per query. I initially tested `top_k = 5`, but the extra-credit evaluation question retrieved older positive extra-credit reports while the conflicting 2025 review stating that extra credit was not provided appeared at rank 7. I therefore changed the final setting to 7 so the system can present both documented sides of that conflict. With this small corpus of short reviews, retrieving seven chunks can add weaker matches, so the generation prompt is instructed to ignore excerpts that do not directly answer the question.
+**Top-k:** 7 chunks per query. I initially tested `top_k = 5`, but the extra-credit evaluation question retrieved older positive extra-credit reports while the conflicting 2025 review stating that extra credit was not provided appeared at rank 7. I therefore changed the retrieval setting to 7 so that this evidence can be returned for evaluation.
 
-**Production tradeoff reflection:** Even if cost were not a constraint, I would compare retrieval quality against latency, multilingual support, model input length, domain-specific accuracy, and whether embeddings should run locally or through an API.  Since the review chunks are short, I do not need a model with a very large context window. A larger model could be slower, so I would only use one if it gave noticeably better retrieval results in my evaluation tests.
+**Post-retrieval evidence filter:** Retrieval returns up to 7 chunks, but `generate_response()` does not automatically send all of them to the LLM. After keeping only chunks from a uniquely named instructor when applicable, it passes only chunks with Chroma distance `<= 0.60` into the generation context. Lower distance means a closer semantic match. This reduces weak or off-topic context, but it can also exclude evidence that was retrieved at a weaker rank. Only chunks that pass this filter appear in the programmatic `Sources:` block.
 
 ---
 
@@ -64,10 +64,10 @@ For the required RAG pipeline, only complete individual review records will be e
 | # | Question | Expected answer |
 |---|----------|-----------------|
 | 1 | Are Asadyan's quizzes and tests like the homework? | Multiple collected reviews said that quizzes were based on homework and that tests or exams were similar to, or primarily taken from, homework. |
-| 2 | Does Asadyan give extra credit? | Reviews conflict across terms. Some 2019 reviews described extra-credit opportunities, while 2025 reviews reported no extra credit. The system should not present either as a current policy. |
-| 3 | How many tests does Gonzaga Mendez give? | Two collected reviews described three tests plus a final, for four major exams total. One review also reported that students could retake two exams. These are past reviewer reports, not current policy. |
+| 2 | Does Asadyan give extra credit? | Reviews conflict across terms. Some 2019 reviews described extra-credit opportunities, while a 2025 review reported no extra credit. The system should not present either as a current policy. |
+| 3 | How many tests does Gonzaga Mendez give? | Past reviews described three tests plus a final, for four major exams total. A separate review mentioned that students could retake two exams, but that detail is not required to answer the test-count question. |
 | 4 | Was Jay Cho's MATH 005A class ever hybrid or online? | Yes. Past reviews described Jay Cho's MATH 005A class as hybrid, and one review said that lectures were mostly online and asynchronous. |
-| 5 | Are any MATH 005A tests open book? | The collected written reviews do not provide enough information to answer this. The system should state that it does not have enough information in the retrieved reviews and should not guess or use outside sources. |
+| 5 | What is the weather forecast in Pasadena tomorrow? | The system should return: "I don't have enough information in the collected reviews to answer that." It should not guess, use outside sources, or append a Sources block. |
 
 ---
 ## Anticipated Challenges
@@ -104,8 +104,10 @@ chunk_id, text, source, position, distance
       ▼
 [Generation]
 generator.py
+keep named-instructor chunks when applicable
+keep only distance <= 0.50
 Groq SDK + llama-3.3-70b-versatile
-answer only from retrieved review text
+answer only from filtered review text
       │
       ▼
 [Programmatic Sources]

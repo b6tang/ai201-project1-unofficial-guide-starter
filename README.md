@@ -63,6 +63,7 @@ I used `all-MiniLM-L6-v2` through ChromaDB's SentenceTransformer embedding funct
 
 **Production tradeoff reflection:**  
 Even if cost were not an issue, I would not automatically switch models. I would first test whether a stronger model actually finds instructor-specific details better, such as class format or exam policies. A larger or API-hosted model could be slower and would add another dependency.
+
 ---
 
 ## Retrieval Test Results
@@ -111,8 +112,12 @@ The first two chunks directly answer the question because both describe the clas
 **System prompt grounding instruction:**  
 My system prompt tells the model to “Answer only from the retrieved student reviews” and to “Make only claims directly supported by the excerpts.” It also tells the model to describe claims as past reviewer reports, not current course policy. If the reviews do not support the question, it must return: `I don't have enough information in the collected reviews to answer that.` The model only receives the chunks returned by retrieval, and for questions that name one instructor, I remove chunks from other instructors before sending the context to the model.
 
+**Post-retrieval relevance filter:**  
+Retrieval returns up to 7 chunks. Before calling Groq, `generator.py` keeps chunks from the named instructor when the query identifies exactly one instructor, then keeps only chunks with a Chroma distance of `0.60` or lower. Only those filtered chunks are included in the LLM context and in the programmatically generated `Sources:` section. This reduces weaker matches, but evaluation showed that it can also remove relevant evidence when its distance is above the cutoff.
+
 **How source attribution is surfaced in the response:**  
 Each retrieved review is labeled with its source filename and review number. After the model answers, Python adds the `Sources:` section using the same chunks that were passed into generation. The LLM does not create its own citations.
+
 ---
 
 ## Example Responses
@@ -120,51 +125,52 @@ Each retrieved review is labeled with its source filename and review number. Aft
 **Grounded response 1**
 
 Query:  
-How many tests does Gonzaga Mendez give?
+Does Asadyan give extra credit?
 
 Response:  
-A past reviewer reported that Gonzaga Mendez gives 3 tests and 1 final. Another reviewer also reported that the entire gradebook is based off 3 tests + the final.
+A past reviewer reported that Professor Asadyan gives extra credit, specifically mentioning that she gives everyone a chance to write down answers as extra credits, with the reviewer earning 12 points of extra credit. Another past reviewer also mentioned that quiz scores are considered as extra credit. However, a different past reviewer reported that Professor Asadyan does not provide extra credit.
 
-A past reviewer from 2022 reported that there are 4 exams in total, which includes 3 tests and 1 final.
-
-Source attribution:
-- gonzaga_mendez.txt — Review 2
-- gonzaga_mendez.txt — Review 8
-- gonzaga_mendez.txt — Review 1
-- gonzaga_mendez.txt — Review 3
-- gonzaga_mendez.txt — Review 5
-- gonzaga_mendez.txt — Review 6
-- gonzaga_mendez.txt — Review 7
-
+Sources:
+- anahit_asadyan.txt — Review 7
+- anahit_asadyan.txt — Review 5
+- anahit_asadyan.txt — Review 6
+- anahit_asadyan.txt — Review 9
+- anahit_asadyan.txt — Review 8
+- anahit_asadyan.txt — Review 10
+- anahit_asadyan.txt — Review 4
+  
 ---
 
-**Grounded response 2**
-
 Query:  
-Was Jay Cho's MATH 005A class ever hybrid or online?
+Are Asadyan's quizzes and tests like the homework?
 
 Response:  
-A past reviewer reported that Jay Cho's MATH 005A class was hybrid in 2022 and 2024, with online lectures and in-person group work. Another past reviewer reported that in 2023, the class was mostly online with asynchronous lectures and in-person review sessions.
+A past reviewer reported that Professor Asadyan's tests are taken primarily from the homework. Another reviewer stated that quiz questions are based on the homework and the exams are based on homework and quiz. A reviewer also mentioned that the homework is similar to the test/quizzes.
 
-A past reviewer from 2009 did not mention the class being hybrid or online, but this review does not provide information about the class format.
+A past reviewer reported that doing the homework is enough to do fine in the class, and another reviewer recommended studying the textbook problems as well and using outside sources of material to better chances.
 
-Source attribution:
-- jay_cho.txt — Review 1
-- jay_cho.txt — Review 3
-- jay_cho.txt — Review 5
-- jay_cho.txt — Review 2
+Sources:
+- anahit_asadyan.txt — Review 8
+- anahit_asadyan.txt — Review 5
+- anahit_asadyan.txt — Review 9
+- anahit_asadyan.txt — Review 2
+- anahit_asadyan.txt — Review 3
+- anahit_asadyan.txt — Review 7
+- anahit_asadyan.txt — Review 6
 
 ---
 
 **Out-of-scope query**
 
 Query:  
-Are any MATH 005A tests open book?
+What is the weather forecast in Pasadena tomorrow?
 
 System response (refusal):  
 I don't have enough information in the collected reviews to answer that.
 
 ---
+
+## Query Interface
 
 **Input fields:**  
 The app has one text box labeled `Ask about a MATH 005A instructor`. I can enter a question and either click the `Ask` button or press Enter.
@@ -192,32 +198,36 @@ The app shows a short answer in a text box below the question. For supported que
 ---
 
 ## Evaluation Report
-| # | Question | Expected answer | System response (summarized) | Retrieved chunks | Retrieval quality | Response accuracy |
-|---|----------|-----------------|------------------------------|------------------|-------------------|-------------------|
-| 1 | Are Asadyan's quizzes and tests like the homework? | Multiple reviews report that quizzes were based on homework and tests or exams were similar to, or primarily taken from, homework. | The system correctly reported that tests were primarily from homework and that quizzes and exams were based on homework. It then added that quizzes and tests may require more than homework, which was an inference from general study advice rather than a direct review claim. | `anahit_asadyan.txt` — Reviews 8, 5, 9, 2, 3, 7, 6 | Relevant | Partially accurate |
-| 2 | Does Asadyan give extra credit? | Reports conflict: 2019 reviews described extra-credit opportunities, while a 2025 review reported no extra credit. Do not present either as current policy. | The system reported 2019 reviews describing extra credit and quiz-score extra credit, then contrasted them with a 2025 review stating that Asadyan did not provide extra credit. | `anahit_asadyan.txt` — Reviews 7, 5, 6, 9, 8, 10, 4 | Relevant | Accurate |
-| 3 | How many tests does Gonzaga Mendez give? | Past reviews describe 3 tests plus 1 final, for 4 major exams total. | The system reported 3 tests and 1 final, and stated that a 2022 review described 4 exams total: 3 tests and 1 final. | `gonzaga_mendez.txt` — Reviews 2, 8, 1, 3, 5, 6, 7 | Relevant | Accurate |
-| 4 | Was Jay Cho's MATH 005A class ever hybrid or online? | Yes. Past reviews described hybrid classes, and one review described mostly online asynchronous lectures. | The system reported hybrid classes in 2022 and 2024 and mostly online asynchronous lectures in 2023. It also noted that a 2009 review did not provide class-format information. | Raw retrieval: `jay_cho.txt` — Reviews 1, 3, 5, 2; `sandra_vazquez_celaya.txt` — Reviews 6, 15, 16. The instructor filter kept only the Jay Cho reviews for generation. | Partially relevant | Partially accurate |
-| 5 | Are any MATH 005A tests open book? | The collected reviews do not provide enough information; the system should decline rather than guess. | `I don't have enough information in the collected reviews to answer that.` | `sandra_vazquez_celaya.txt` — Reviews 6, 1; `irina_badalyan.txt` — Review 16; `nerses_abramyan.txt` — Reviews 17, 7; `frank_bermudez.txt` — Review 8; `john_mathewson.txt` — Review 13 | Partially relevant | Accurate |
+
+| # | System response (summarized)                                                                                                                                                              | Retrieval quality  | Response accuracy |
+| - | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ----------------- |
+| 1 | Reported that tests were primarily from homework, quizzes and exams were based on homework, and homework was similar to tests and quizzes. It also included study advice from a reviewer. | Relevant           | Accurate          |
+| 2 | Reported conflicting past reviews: 2019 reviewers described extra-credit opportunities, while a 2025 reviewer reported no extra credit.                                                   | Relevant           | Accurate          |
+| 3 | Reported 3 tests plus 1 final; a 2022 review described 4 exams total.                                                                                                                     | Relevant           | Accurate          |
+| 4 | Reported hybrid classes in 2022 and 2024, plus mostly online asynchronous lectures in 2023. It also added an irrelevant note that the 2009 review gave no course-format information.      | Partially relevant | Accurate          |
+| 5 | I don't have enough information in the collected reviews to answer that.                                                                                                                  | Off-target         | Accurate          |
+
 
 **Retrieval quality:** Relevant / Partially relevant / Off-target  
 **Response accuracy:** Accurate / Partially accurate / Inaccurate
+
 
 ---
 
 ## Failure Case Analysis
 
 **Question that failed:**  
-Are Asadyan's quizzes and tests like the homework?
+Are any MATH 005A tests open book?
 
 **What the system returned:**  
-The system correctly said that past reviews described tests as coming from homework and quizzes and exams as based on homework. However, it also said that quizzes and tests may require more than just homework.
+The system retrieved reviews discussing tests and book problems, then stated that no retrieved reviewer described whether tests were open book. It returned a grounded explanation with sources instead of the intended exact fallback message.
 
 **Root cause (tied to a specific pipeline stage):**  
-This was a generation-stage problem. Retrieval returned some directly relevant reviews, but it also included more general study advice. The model connected that advice to the question and made an inference instead of only using the reviews that directly discussed quizzes, tests, and homework.
+This was primarily a retrieval-and-evidence-selection limitation. Semantic retrieval treated “open book” and “book problems” as closely related, so chunks about tests based on textbook problems had low distances and passed the generation filter. However, those chunks did not directly establish whether students could use a book during an exam. The LLM then produced a reasonable evidence-limited summary rather than the exact fallback required by this project's test.
 
-**What you would change to fix it:**  
-I would add a step before generation that keeps only chunks that directly answer the question. I would also add a check for inference wording such as “implying” before showing the answer.
+**What you would change to improve it:**  
+A future version could use hybrid retrieval or a reranking/evidence-verification step for narrow factual questions. In this case, the system would distinguish evidence about exam format from evidence about textbook-derived questions by checking for direct support of concepts such as “open book,” “notes allowed,” or similar wording before generation.
+
 ---
 
 ## Spec Reflection
@@ -226,6 +236,7 @@ The spec helped me break the project into smaller steps: chunking, retrieval, an
 
 **One way your implementation diverged from the spec, and why:**  
 I originally planned to retrieve 5 chunks, but changed it to 7. When I tested the extra-credit question, the conflicting 2025 review only appeared at rank 7, so keeping 5 results would have missed it.
+
 ---
 
 ## AI Usage

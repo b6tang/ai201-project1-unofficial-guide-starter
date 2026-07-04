@@ -18,6 +18,9 @@ CHROMA_PATH = "./chroma_db"
 # --- Retrieval ---
 N_RESULTS = 7
 
+# --- Generator ---
+DISTANCE_CUTOFF = 0.60
+
 # --- Documents ---
 DOCS_PATH = "./documents"
 REVIEW_PATTERN = re.compile(r"(?m)^---\s*Review\s+(\d+)\s*---\s*$")

@@ -83,7 +83,7 @@ def retrieve(query, top_k=N_RESULTS):
         query (str):
             A non-empty natural-language question about the collected MATH 005A instructor reviews.
         top_k (int):
-            Maximum number of nearest chunks to return. Defaults to 5.
+            Maximum number of nearest chunks to return. Defaults to 7.
 
     Returns:
         list[dict]:
